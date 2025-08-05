@@ -1,0 +1,7 @@
+---
+# devopsenginar.vm_provisioner/handlers/main.yml
+- name: Display VM outputs
+  ansible.builtin.debug:
+    msg: "Terraform outputs for {{ terraform_result.outputs | to_nice_json }}"
+  delegate_to: localhost
+  run_once: true

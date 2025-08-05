@@ -1,0 +1,52 @@
+---
+# devopsenginar.vm_provisioner/tasks/check_and_install_virtualbox.yml
+# This file handles the installation of VirtualBox and its dependencies on Debian-based systems.
+
+- name: Add Oracle VirtualBox GPG key for APT repository
+  ansible.builtin.apt_key:
+    url: https://www.virtualbox.org/download/oracle_vbox_2016.asc
+    state: present
+    keyring: /usr/share/keyrings/oracle-virtualbox-2016.gpg
+  when: ansible_os_family == "Debian"
+
+- name: Add Oracle VirtualBox APT repository
+  ansible.builtin.apt_repository:
+    repo: "deb [arch={{ ansible_architecture }} signed-by=/usr/share/keyrings/oracle-virtualbox-2016.gpg] https://download.virtualbox.org/virtualbox/debian {{ ansible_distribution_release }} contrib"
+    state: present
+    filename: virtualbox
+    update_cache: true # This will re-run apt update with the correct arch
+  when: ansible_os_family == "Debian"
+
+- name: Get current VirtualBox version (if installed)
+  ansible.builtin.command: vboxmanage --version
+  register: virtualbox_version_check
+  changed_when: false
+  failed_when: false # Don't fail if vboxmanage is not found
+  check_mode: false
+
+- name: Determine if VirtualBox needs installation or upgrade
+  ansible.builtin.set_fact:
+    install_virtualbox: >-
+      {% set current_version = virtualbox_version_check.stdout | regex_replace('^(\\d+\\.\\d+).*', '\\1') %}
+      {{ virtualbox_version_check.rc != 0 or
+         (virtualbox_version_check.stdout is defined and
+          virtualbox_version_check.stdout != '' and
+          current_version is version(vm_provisioner_virtualbox_version, '<'))
+      }}
+  when: ansible_os_family == "Debian"
+
+
+- name: Install or upgrade VirtualBox and DKMS modules
+  ansible.builtin.apt:
+    name:
+      - "virtualbox"
+      - virtualbox-dkms
+    state: present
+    update_cache: true
+  when: ansible_os_family == "Debian" and install_virtualbox
+
+- name: Ensure VirtualBox kernel modules are loaded (if not already)
+  ansible.builtin.modprobe:
+    name: vboxdrv
+    state: present
+  when: ansible_os_family == "Debian" and install_virtualbox

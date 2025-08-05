@@ -1,0 +1,30 @@
+---
+# devopsenginar.vm_provisioner/tasks/check_and_install_terraform.yml
+
+- name: Include HashiCorp repository setup tasks
+  ansible.builtin.include_tasks: _install_hashicorp_repo.yml
+  when: ansible_os_family == "Debian" # Only run for Debian-based systems
+
+- name: Check if Terraform is installed
+  ansible.builtin.command: terraform --version
+  register: terraform_version_check
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Determine if Terraform needs installation or upgrade
+  ansible.builtin.set_fact:
+    install_terraform: >-
+      {{ terraform_version_check.rc != 0 or
+         (terraform_version_check.stdout is defined and
+          terraform_version_check.stdout != '' and
+          terraform_version_check.stdout | regex_search('Terraform\\s+v(\\d+\\.\\d+\\.\\d+)') and
+          terraform_version_check.stdout | regex_replace('Terraform\\s+v(\\d+\\.\\d+\\.\\d+).*', '\\1') is version(terraform_version, '<'))
+      }}
+
+- name: Install or upgrade Terraform
+  ansible.builtin.apt:
+    name: terraform
+    state: latest # Use 'latest' to ensure desired version if available, or 'present'
+    update_cache: true
+  when: ansible_os_family == "Debian" and install_terraform

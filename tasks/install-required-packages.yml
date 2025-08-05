@@ -1,0 +1,14 @@
+- name: Ensure required packages are installed
+  ansible.builtin.apt:
+    name: "{{ item }}"
+    state: present
+    update_cache: true
+  when: ansible_os_family == "Debian"
+  loop:
+    - gnupg
+    - software-properties-common
+    - curl
+    - dkms
+    - net-tools
+    - python3-netaddr
+    - linux-headers-generic

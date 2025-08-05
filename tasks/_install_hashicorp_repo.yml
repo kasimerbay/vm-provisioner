@@ -1,0 +1,39 @@
+---
+# devopsenginar.vm_provisioner/tasks/_install_hashicorp_repo.yml
+# This file handles adding the HashiCorp GPG key and APT repository for Debian-based systems.
+
+- name: Check if HashiCorp repo is already configured
+  ansible.builtin.stat:
+    path: /etc/apt/sources.list.d/hashicorp.list
+  register: hashicorp_repo_configured
+
+- name: Add HashiCorp GPG key for APT repository
+  ansible.builtin.apt_key:
+    url: https://apt.releases.hashicorp.com/gpg
+    state: present
+    keyring: /usr/share/keyrings/hashicorp-archive-keyring.gpg # Using the new keyring location
+  when: ansible_os_family == "Debian" and not hashicorp_repo_configured.stat.exists
+
+- name: Add HashiCorp APT repository
+  ansible.builtin.apt_repository:
+    repo: "deb [arch={{ ansible_architecture }} signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com {{ ansible_distribution_release }} main"
+    state: present
+    filename: hashicorp
+    update_cache: true
+  when: ansible_os_family == "Debian" and not hashicorp_repo_configured.stat.exists
+
+## Debugging output to verify repository addition
+- name: Verify HashiCorp repository was added
+  ansible.builtin.command: grep -r "apt.releases.hashicorp.com" /etc/apt/sources.list /etc/apt/sources.list.d/
+  register: repo_check
+  changed_when: false
+  when: not hashicorp_repo_configured.stat.exists
+
+- name: Check available Vagrant versions in repository
+  ansible.builtin.command: apt-cache policy vagrant
+  register: vagrant_policy
+  changed_when: false
+
+- name: Show Vagrant package availability
+  debug:
+    var: vagrant_policy.stdout

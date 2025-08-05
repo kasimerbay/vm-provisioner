@@ -1,0 +1,38 @@
+# main.tf.j2
+terraform {
+  required_providers {
+    vagrant = {
+      source  = "{{ vm_provisioner_terraform_provider_source }}"
+      version = "{{ vm_provisioner_terraform_provider_version }}"
+    }
+  }
+}
+
+provider "vagrant" {
+}
+
+resource "vagrant_vm" "instance" {
+  name = "{{ vm.hostname }}"
+  vagrantfile_dir = "./{{ vm_provisioner_vagrant_files_base_dir }}"
+  get_ports = true
+}
+
+output "ssh_config" {
+  value       = vagrant_vm.instance.ssh_config
+  description = "SSH connection details for the {{ vm.hostname }} Vagrant VM."
+}
+
+output "ip_address" {
+  value       = vagrant_vm.instance.ssh_config[0].host
+  description = "The IP address of the {{ vm.hostname }} Vagrant VM (from SSH config)."
+}
+
+output "ssh_port" {
+  value       = vagrant_vm.instance.ssh_config[0].port
+  description = "The SSH port of the {{ vm.hostname }} Vagrant VM (from SSH config)."
+}
+
+output "forwarded_ports" {
+  value       = vagrant_vm.instance.ports
+  description = "List of forwarded ports for the {{ vm.hostname }} Vagrant VM."
+}

@@ -1,0 +1,39 @@
+# devopsenginar.vm_provisioner/defaults/main.yml
+
+# --- General Setup ---
+terraform_install_path: /usr/local/bin
+ansible_python_interpreter: /usr/bin/python3 # Could be set in inventory or group_vars of the consuming project
+terraform_version: "1.8.5" # Default Terraform version to install
+
+# --- Terraform Provider Defaults ---
+vm_provisioner_terraform_provider_source: "bmatcuk/vagrant"
+vm_provisioner_terraform_provider_version: "~> 4.1.0"
+
+# --- VM Configuration Defaults ---
+vm_provisioner_name: "alma9"       # Default VM name (used for naming convention, Vagrantfile define, and Terraform resource)
+vm_provisioner_box_name: "generic/alma9"
+vm_provisioner_box_version: "4.3.12"
+
+# Directory where Vagrantfile and provisioning scripts reside relative to the Terraform working directory
+vm_provisioner_vagrant_files_base_dir: "alma9-generic"
+
+# Common provisioning scripts (paths are relative to the role's 'files/vm_provisioner_vagrant_files_base_dir' directory)
+vm_provisioner_provision_scripts:
+  # - { name: "common_mise", path: "install_mise.sh" }
+  - { name: "common_keys", path: "add_public_keys.sh" }
+
+vm_provisioner_hosts:
+  - hostname: "vm-1"
+    ip: "{{ available_ip }}" # This will be set dynamically by the check-available-ips role
+    memory_mb: 4096
+    cpus: 2
+    public_network_enabled: true
+    forwarded_ports:
+      - { guest: 2222, host: 2222 }
+      - { guest: 8080, host: 8080 }
+      - { guest: 443, host: 443 }
+
+vm_provisioner_public_network_bridge_interface: "{{ ansible_default_ipv4.interface }}"
+
+# --- VirtualBox specific defaults ---
+vm_provisioner_virtualbox_version: "7.0.16" # Specify your desired VirtualBox version (e.g., "6.1", "7.0")

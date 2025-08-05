@@ -1,0 +1,90 @@
+---
+# devopsenginar.vm_provisioner/tasks/main.yml
+
+# --- Step 0: Include necessary packages ---
+- name: Install required packages
+  ansible.builtin.include_tasks: install-required-packages.yml
+
+# --- Step 1: Check for existing Vagrant, Terraform, and VirtualBox installations ---
+- name: Check if Vagrant executable is present in PATH
+  ansible.builtin.command: vagrant --version
+  register: vagrant_check_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Set fact indicating Vagrant's presence
+  ansible.builtin.set_fact:
+    is_vagrant_present: "{{ vagrant_check_result.rc == 0 }}"
+  when: ansible_os_family == "Debian"
+
+- name: Check if Terraform executable is present in PATH
+  ansible.builtin.command: terraform --version
+  register: terraform_check_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Set fact indicating Terraform's presence
+  ansible.builtin.set_fact:
+    is_terraform_present: "{{ terraform_check_result.rc == 0 }}"
+  when: ansible_os_family == "Debian"
+
+- name: Check if VirtualBox executable is present in PATH
+  ansible.builtin.command: vboxmanage --version
+  register: virtualbox_check_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Set fact indicating VirtualBox's presence
+  ansible.builtin.set_fact:
+    is_virtualbox_present: "{{ virtualbox_check_result.rc == 0 }}"
+  when: ansible_os_family == "Debian"
+
+- name: Print VirtualBox, Vagrant, and Terraform presence status as JSON
+  ansible.builtin.debug:
+    msg: "{{ {'VirtualBox present': is_virtualbox_present, 'Vagrant present': is_vagrant_present, 'Terraform present': is_terraform_present} | to_nice_json }}"
+
+# --- Step 2: Conditionally include installation tasks ---
+- name: Install VirtualBox if missing
+  ansible.builtin.include_tasks: check_and_install_virtualbox.yml
+  when: 
+    - ansible_os_family == "Debian"
+    - not is_virtualbox_present
+
+- name: Install Vagrant if missing
+  ansible.builtin.include_tasks: check_and_install_vagrant.yml
+  when:
+    - ansible_os_family == "Debian"
+    - not is_vagrant_present
+
+- name: Install Terraform if missing
+  ansible.builtin.include_tasks: check_and_install_terraform.yml
+  when:
+    - ansible_os_family == "Debian"
+    - not is_terraform_present
+
+# --- Step 3: Proceed with VM provisioning ---
+- name: Loop over each IP to provision VMs
+  ansible.builtin.include_tasks: provision-vm.yml
+  loop: "{{ vm_provisioner_hosts }}"
+  loop_control:
+    loop_var: vm
+  vars:
+    vm: "{{ vm }}"
+
+# --- Step 4: Print created Hosts ---
+- name: Print VM Provisioner Hosts Configuration
+  debug:
+    msg: |
+      Hostname: {{ item.hostname }}
+      IP: {{ item.ip }}
+      Memory (MB): {{ item.memory_mb }}
+      CPUs: {{ item.cpus }}
+      Public Network: {{ item.public_network_enabled }}
+      Forwarded Ports:
+      {% for port in item.forwarded_ports %}
+        - Guest: {{ port.guest }}, Host: {{ port.host }}
+      {% endfor %}
+  loop: "{{ vm_provisioner_hosts }}"

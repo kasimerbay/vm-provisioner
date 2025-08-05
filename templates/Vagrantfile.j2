@@ -1,0 +1,24 @@
+# Vagrantfile.j2
+Vagrant.configure("2") do |config|
+  # Common configuration
+  config.vm.box = "{{ vm_provisioner_box_name }}"
+  config.vm.box_version = "{{ vm_provisioner_box_version }}"
+
+  # {{ vm.hostname }} Server
+  config.vm.hostname = "{{ vm.hostname }}"
+  config.vm.network "{{ 'public_network' if vm.public_network_enabled else 'private_network' }}", ip: "{{ vm.ip }}"
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.memory = {{ vm.memory_mb }}
+    vb.cpus = {{ vm.cpus }}
+  end
+
+  # Common provisioning scripts for all VMs
+{% for script in vm_provisioner_provision_scripts %}
+  config.vm.provision "shell", name: "{{ script.name }}", path: "{{ script.path }}"
+{% endfor %}
+
+{% for port in vm.forwarded_ports %}
+  config.vm.network "forwarded_port", guest: {{ port.guest }}, host: {{ port.host }}
+{% endfor %}
+end

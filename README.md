@@ -39,11 +39,11 @@ vm_provisioner_hosts:
 
 Example playbook:
 ```yaml
-- hosts: localhost
-  connection: local
+- hosts: node1
+  become: yes
   roles:
     - check-available-ips
-    - vm_provisioner
+    - vm-provisioner
 ```
 
 * clone check-available-ips role [here](https://github.com/kasimerbay/vm-provisioner.git)

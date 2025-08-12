@@ -65,6 +65,12 @@
     - ansible_os_family == "Debian"
     - not is_terraform_present
 
+# --- Step 2.1: Ensure Ansible controller kvm-intel module removed ---
+- name: Blacklist the nouveau driver module
+  community.general.kernel_blacklist:
+    name: kvm-intel
+    state: absent
+
 # --- Step 3: Proceed with VM provisioning ---
 - name: Loop over each IP to provision VMs
   ansible.builtin.include_tasks: provision-vm.yml
@@ -73,18 +79,3 @@
     loop_var: vm
   vars:
     vm: "{{ vm }}"
-
-# --- Step 4: Print created Hosts ---
-- name: Print VM Provisioner Hosts Configuration
-  debug:
-    msg: |
-      Hostname: {{ item.hostname }}
-      IP: {{ item.ip }}
-      Memory (MB): {{ item.memory_mb }}
-      CPUs: {{ item.cpus }}
-      Public Network: {{ item.public_network_enabled }}
-      Forwarded Ports:
-      {% for port in item.forwarded_ports %}
-        - Guest: {{ port.guest }}, Host: {{ port.host }}
-      {% endfor %}
-  loop: "{{ vm_provisioner_hosts }}"

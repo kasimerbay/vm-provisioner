@@ -18,6 +18,11 @@ Vagrant.configure("2") do |config|
   config.vm.provision "shell", name: "{{ script.name }}", path: "{{ script.path }}"
 {% endfor %}
 
+  # Add public keys to the VM
+  id_rsa_pub = File.read("~/.ssh/authorized_keys")
+  config.vm.provision "shell",
+    inline: "echo '#{id_rsa_pub}' >> /home/vagrant/.ssh/authorized_keys"
+
 {% for port in vm.forwarded_ports %}
   config.vm.network "forwarded_port", guest: {{ port.guest }}, host: {{ port.host }}
 {% endfor %}

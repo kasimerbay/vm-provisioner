@@ -19,8 +19,7 @@ vm_provisioner_vagrant_files_base_dir: "alma9-generic"
 
 # Common provisioning scripts (paths are relative to the role's 'files/vm_provisioner_vagrant_files_base_dir' directory)
 vm_provisioner_provision_scripts:
-  # - { name: "common_mise", path: "install_mise.sh" }
-  - { name: "common_keys", path: "add_public_keys.sh" }
+  - { name: "common_keys", path: "example.sh" }
 
 vm_provisioner_hosts:
   - hostname: "vm-1"

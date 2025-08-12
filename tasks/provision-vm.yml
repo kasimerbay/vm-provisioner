@@ -20,6 +20,7 @@
     dest: "{{ terraform_working_dir }}/{{ vm_provisioner_vagrant_files_base_dir }}/{{ item.path | basename }}"
     mode: '0755'
   loop: "{{ vm_provisioner_provision_scripts }}"
+  ignore_errors: true
 
 - name: Generate Vagrantfile from template
   ansible.builtin.template:
